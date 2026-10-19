@@ -1,0 +1,8 @@
+{
+  "name": "funny-bunny-site",
+  "private": true,
+  "scripts": {
+    "dev": "node preview.mjs",
+    "check": "node verify.mjs"
+  }
+}

@@ -1,7 +1,13 @@
 import fs from 'node:fs';import path from 'node:path';import assert from 'node:assert/strict';
-const html=fs.readFileSync('dist/index.html','utf8');const js=fs.readFileSync('dist/app.js','utf8');const ids=new Set([...html.matchAll(/\bid="([^"]+)"/g)].map(m=>m[1]));
+const html=fs.readFileSync('dist/index.html','utf8');const js=fs.readFileSync('dist/app.js','utf8');const content=fs.readFileSync('dist/content.js','utf8');const ids=new Set([...html.matchAll(/\bid="([^"]+)"/g)].map(m=>m[1]).concat([...content.matchAll(/\.id='([^']+)'/g)].map(m=>m[1])));
 const assets=[...html.matchAll(/(?:src|href)="([^"#][^"]*)"/g)].map(m=>m[1]).filter(x=>!/^https?:|^tel:/.test(x));for(const asset of assets)assert(fs.existsSync(path.join('dist',asset)),`Missing asset: ${asset}`);
 for(const m of html.matchAll(/href="#([^"]+)"/g))assert(ids.has(m[1]),`Missing anchor: ${m[1]}`);
 assert.equal([...html.matchAll(/<h1\b/g)].length,1);assert(html.includes('Content-Security-Policy'));assert(!/<script[^>]*src="https?:/.test(html));assert(!/\b(fetch|eval)\s*\(|localStorage|sessionStorage|innerHTML/.test(js));
 for(const m of html.matchAll(/<a\b[^>]*target="_blank"[^>]*>/g))assert(m[0].includes('noopener noreferrer'));
-console.log(`PASS: ${assets.length} local asset references, all section anchors, one H1, external link protection, CSP and browser-only interactions.`);
+assert.equal([...content.matchAll(/url:'https:\/\/vk\.ru\/market\/product\//g)].length,9);
+assert(content.includes('ДЕМО-ВЕРСИЯ')&&!content.includes('map-frame'));
+assert(!html.includes('class="section planning"')&&!content.includes('className=\'section guide\''));
+assert.equal([...content.matchAll(/\['45724\d+','[^']+'\]/g)].length,31);
+for(const match of content.matchAll(/['"](457\d{6})['"]/g))assert(fs.existsSync(path.join('dist/assets/vk',`${match[1]}.jpg`)),`Missing VK photo: ${match[1]}`);
+assert(html.includes('id="package-dialog"')&&html.includes('id="package-thumbnails"'));
+console.log(`PASS: ${assets.length} local assets, anchors, 12 catalog items, 31 gallery photos, demo label, CSP and external links.`);
